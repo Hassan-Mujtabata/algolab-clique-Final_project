@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clique Problem — Interactive Visualizer | BCS 309</title>
+<style>
+:root {
+  --bg: #080c14;
+  --surface: #0d1320;
+  --surface2: #151d2e;
+  --surface3: #1c2640;
+  --border: #2a3548;
+  --text: #e2e8f0;
+  --text-muted: #7a8599;
+  --accent: #00d4aa;
+  --accent-dim: rgba(0,212,170,0.12);
+  --accent2: #ff6b6b;
+  --accent3: #ffd166;
+  --candidate-color: #6b8cff;
+  --normal-color: #3d5070;
+  --edge-normal: #2a3548;
+  --edge-clique: #00d4aa;
+  --edge-checking: #ffd166;
+  --font-mono: 'Courier New', Courier, monospace;
+  --font-main: Georgia, 'Times New Roman', serif;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:var(--font-mono); height:100vh; overflow:hidden; display:flex; flex-direction:column; }
+
+/* HEADER */
+header { background:var(--surface); border-bottom:1px solid var(--border); padding:9px 20px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+header h1 { font-family:var(--font-main); font-size:1.1rem; color:var(--accent); letter-spacing:0.5px; }
+.subtitle { font-size:0.65rem; color:var(--text-muted); margin-top:1px; }
+.badge { background:var(--accent-dim); border:1px solid var(--accent); color:var(--accent); font-size:0.62rem; padding:3px 10px; }
+
+/* LAYOUT */
+.main { display:flex; flex:1; overflow:hidden; }
+
+/* LEFT PANEL */
+.left-panel { width:355px; min-width:355px; background:var(--surface); border-right:1px solid var(--border); display:flex; flex-direction:column; overflow-y:auto; overflow-x:hidden; }
+.left-panel::-webkit-scrollbar { width:3px; }
+.left-panel::-webkit-scrollbar-thumb { background:var(--border); }
+.panel-section { border-bottom:1px solid var(--border); padding:11px 13px; }
+.section-title { font-size:0.6rem; color:var(--text-muted); letter-spacing:1.8px; text-transform:uppercase; margin-bottom:9px; }
+
+/* ALGO TABS */
+.algo-tabs { display:flex; gap:4px; }
+.algo-tab { flex:1; padding:6px 4px; font-size:0.68rem; font-family:var(--font-mono); border:1px solid var(--border); background:var(--surface2); color:var(--text-muted); cursor:pointer; transition:all .15s; text-align:center; }
+.algo-tab.active { background:var(--accent-dim); border-color:var(--accent); color:var(--accent); }
+.algo-tab:hover:not(.active) { color:var(--text); border-color:#3d5070; }
+
+/* PRESETS */
+.presets { display:grid; grid-template-columns:1fr 1fr 1fr; gap:4px; margin-bottom:8px; }
+.preset-btn { padding:5px 3px; font-size:0.62rem; font-family:var(--font-mono); border:1px solid var(--border); background:var(--surface2); color:var(--text-muted); cursor:pointer; transition:all .15s; }
+.preset-btn:hover { border-color:var(--accent); color:var(--accent); }
+
+/* INPUTS */
+.input-row { display:flex; align-items:center; gap:7px; margin-bottom:6px; }
+.input-label { font-size:0.62rem; color:var(--text-muted); min-width:55px; }
+.input-field { flex:1; background:var(--surface2); border:1px solid var(--border); color:var(--text); font-family:var(--font-mono); font-size:0.68rem; padding:4px 7px; outline:none; transition:border-color .15s; }
+.input-field:focus { border-color:var(--accent); }
+textarea.input-field { resize:vertical; min-height:52px; max-height:90px; }
+input[type="range"] { flex:1; accent-color:var(--accent); cursor:pointer; }
+input[type="number"].input-field { width:52px; flex:none; text-align:center; }
+
+/* CONTROLS */
+.build-btn { width:100%; padding:8px; font-size:0.72rem; font-family:var(--font-mono); border:1px solid var(--accent); background:var(--accent-dim); color:var(--accent); cursor:pointer; transition:all .15s; letter-spacing:0.5px; margin-bottom:7px; }
+.build-btn:hover { background:rgba(0,212,170,0.22); }
+.control-buttons { display:grid; grid-template-columns:1fr 1fr 1fr; gap:4px; }
+.ctrl-btn { padding:6px 4px; font-size:0.65rem; font-family:var(--font-mono); border:1px solid var(--border); background:var(--surface2); color:var(--text); cursor:pointer; transition:all .15s; display:flex; align-items:center; justify-content:center; gap:3px; }
+.ctrl-btn:hover { border-color:var(--accent); color:var(--accent); }
+.ctrl-btn:disabled { opacity:0.35; cursor:not-allowed; }
+.ctrl-btn.primary { background:var(--accent-dim); border-color:var(--accent); color:var(--accent); }
+.ctrl-btn.danger { border-color:var(--accent2); color:var(--accent2); background:rgba(255,107,107,0.08); }
+
+/* STEP INFO */
+.step-info { display:flex; justify-content:space-between; margin-top:8px; }
+.info-badge { font-size:0.62rem; padding:3px 8px; border:1px solid var(--border); background:var(--surface2); color:var(--text-muted); }
+.info-badge span { color:var(--accent); font-weight:bold; }
+
+/* STATUS */
+.status-box { background:var(--surface2); border:1px solid var(--border); border-left:3px solid var(--accent); padding:7px 9px; font-size:0.66rem; color:var(--text); min-height:34px; line-height:1.55; }
+.status-box.found { border-left-color:var(--accent); }
+.status-box.pruned { border-left-color:var(--accent2); }
+.status-box.checking { border-left-color:var(--accent3); }
+.status-box.none { border-left-color:var(--accent2); }
+
+/* PSEUDOCODE */
+.pseudocode { background:var(--surface2); border:1px solid var(--border); padding:7px; font-size:0.63rem; line-height:1.85; max-height:175px; overflow-y:auto; }
+.pseudo-line { padding:0 4px; display:block; white-space:pre; border-left:2px solid transparent; transition:all .12s; color:var(--text-muted); }
+.pseudo-line.active { background:rgba(0,212,170,0.1); border-left-color:var(--accent); color:var(--text); }
+.pseudo-kw { color:#ff79c6; }
+.pseudo-fn { color:#8be9fd; }
+.pseudo-cm { color:#4d5f7a; }
+
+/* STATS */
+.stats-grid { display:grid; grid-template-columns:1fr 1fr; gap:4px; }
+.stat-item { background:var(--surface2); border:1px solid var(--border); padding:5px 8px; }
+.stat-label { font-size:0.58rem; color:var(--text-muted); }
+.stat-value { font-size:1.05rem; color:var(--accent); font-weight:bold; }
+.stat-value.red { color:var(--accent2); }
+.stat-value.yellow { color:var(--accent3); }
+
+/* RIGHT PANEL */
+.right-panel { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+
+/* TABS */
+.tabs { display:flex; background:var(--surface); border-bottom:1px solid var(--border); flex-shrink:0; }
+.tab { padding:9px 16px; font-size:0.65rem; font-family:var(--font-mono); color:var(--text-muted); cursor:pointer; border-bottom:2px solid transparent; letter-spacing:0.5px; transition:all .15s; white-space:nowrap; }
+.tab:hover { color:var(--text); }
+.tab.active { color:var(--accent); border-bottom-color:var(--accent); }
+.tab-content { flex:1; overflow:hidden; display:none; }
+.tab-content.active { display:flex; flex-direction:column; }
+
+/* GRAPH CANVAS */
+#graph-canvas { flex:1; width:100%; }
+
+/* LEGEND */
+.legend { display:flex; gap:14px; flex-wrap:wrap; padding:7px 14px; background:var(--surface); border-top:1px solid var(--border); flex-shrink:0; }
+.legend-item { display:flex; align-items:center; gap:5px; font-size:0.6rem; color:var(--text-muted); }
+.legend-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+
+/* COMPARISON */
+.comparison-container { flex:1; display:grid; grid-template-columns:1fr 1fr; overflow:hidden; }
+.comp-panel { display:flex; flex-direction:column; border-right:1px solid var(--border); overflow:hidden; }
+.comp-panel:last-child { border-right:none; }
+.comp-header { padding:7px 13px; background:var(--surface); border-bottom:1px solid var(--border); font-size:0.68rem; display:flex; justify-content:space-between; align-items:center; flex-shrink:0; }
+.comp-header .algo-name { color:var(--accent); }
+.comp-svg { flex:1; }
+.comp-stats { padding:7px 13px; background:var(--surface); border-top:1px solid var(--border); display:flex; gap:14px; font-size:0.63rem; flex-shrink:0; }
+.comp-stat { color:var(--text-muted); }
+.comp-stat span { color:var(--accent3); }
+
+/* NP TAB */
+.np-tab { flex:1; overflow-y:auto; padding:18px; }
+.np-tab::-webkit-scrollbar { width:3px; }
+.np-tab::-webkit-scrollbar-thumb { background:var(--border); }
+.proof-section { background:var(--surface); border:1px solid var(--border); margin-bottom:14px; }
+.proof-header { padding:10px 14px; background:var(--surface2); border-bottom:1px solid var(--border); display:flex; align-items:center; gap:9px; }
+.proof-step-num { width:22px; height:22px; background:var(--accent-dim); border:1px solid var(--accent); color:var(--accent); display:flex; align-items:center; justify-content:center; font-size:0.68rem; flex-shrink:0; }
+.proof-header h3 { font-family:var(--font-main); font-size:0.9rem; color:var(--text); }
+.proof-body { padding:14px 16px; font-size:0.7rem; line-height:1.72; color:var(--text); }
+.proof-body p { margin-bottom:9px; }
+.proof-body strong { color:var(--accent); }
+.proof-body .math { color:var(--accent3); font-style:italic; }
+.proof-body .indent { padding-left:14px; border-left:2px solid var(--border); margin:8px 0; }
+.reduction-diagram { margin:14px 0; background:var(--surface2); border:1px solid var(--border); padding:4px; }
+.np-btn-row { display:flex; gap:7px; margin-top:8px; }
+.np-btn-row .ctrl-btn { flex:1; padding:8px; }
+
+/* LEARN TAB */
+.learn-tab { flex:1; overflow-y:auto; padding:18px; }
+.learn-tab::-webkit-scrollbar { width:3px; }
+.learn-tab::-webkit-scrollbar-thumb { background:var(--border); }
+.collapsible { background:var(--surface); border:1px solid var(--border); margin-bottom:9px; }
+.collapsible-header { padding:11px 14px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; font-size:0.72rem; user-select:none; transition:background .15s; }
+.collapsible-header:hover { background:var(--surface2); }
+.collapsible-arrow { transition:transform .25s; display:inline-block; color:var(--text-muted); font-size:0.65rem; }
+.collapsible-body { padding:0 16px; max-height:0; overflow:hidden; transition:max-height .35s ease, padding .35s; font-size:0.68rem; line-height:1.72; color:var(--text); }
+.collapsible-body.open { max-height:700px; padding:14px 16px; }
+.concept-box { background:var(--surface2); border-left:3px solid var(--accent); padding:9px 13px; margin:10px 0; font-size:0.68rem; }
+.concept-box h4 { color:var(--accent); margin-bottom:5px; font-size:0.7rem; }
+.concept-box.red { border-left-color:var(--accent2); }
+.concept-box.red h4 { color:var(--accent2); }
+.concept-box.yellow { border-left-color:var(--accent3); }
+.concept-box.yellow h4 { color:var(--accent3); }
+.growth-chart-container { background:var(--surface); border:1px solid var(--border); padding:14px; margin-bottom:12px; }
+.growth-chart-container h3 { font-size:0.62rem; color:var(--text-muted); letter-spacing:1.2px; text-transform:uppercase; margin-bottom:10px; }
+#growth-chart { width:100%; display:block; }
+
+/* Scrollbar global */
+::-webkit-scrollbar { width:3px; height:3px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--border); }
+
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.4} }
+.playing-indicator { animation:blink .9s infinite; }
+@keyframes pulse-ring { 0%{transform:scale(1);opacity:0.85} 100%{transform:scale(2.2);opacity:0} }
+@keyframes found-flash { 0%,100%{opacity:1} 50%{opacity:0.45} }
+.found-flash { animation:found-flash .45s ease-in-out 4; }
+.pulse-ring { transform-box:fill-box; transform-origin:center; animation:pulse-ring 0.75s ease-out forwards; }
+
+/* PROGRESS BAR */
+.progress-wrap { height:3px; background:var(--surface3); margin-top:7px; position:relative; }
+.progress-bar { height:100%; background:var(--accent); width:0%; transition:width .1s linear; }
+
+/* KEYBOARD HINT */
+.key-hint { font-size:0.56rem; color:var(--text-muted); text-align:center; margin-top:5px; opacity:0.65; }
+.key-hint kbd { background:var(--surface3); border:1px solid var(--border); padding:1px 4px; font-family:var(--font-mono); font-size:0.55rem; }
+
+/* BEST CLIQUE BADGE */
+.best-clique-bar { background:var(--surface2); border:1px solid var(--border); border-left:3px solid var(--accent3); padding:5px 9px; font-size:0.63rem; margin-top:6px; display:flex; justify-content:space-between; align-items:center; }
+.best-clique-bar .bc-label { color:var(--text-muted); }
+.best-clique-bar .bc-val { color:var(--accent3); font-weight:bold; }
+
+/* COMPARISON ANIMATE */
+.comp-run-bar { padding:9px 14px; background:var(--surface); border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px; flex-shrink:0; }
+.comp-progress { flex:1; height:3px; background:var(--surface3); }
+.comp-progress-fill { height:100%; transition:width .1s; }
+.comp-progress-fill.bf { background:var(--accent2); }
+.comp-progress-fill.bt { background:var(--accent); }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>CLIQUE — Interactive Visualizer</h1>
+    <div class="subtitle">BCS 309 · Algorithms I · NP-Completeness & Algorithm Design</div>
+  </div>
+  <div class="badge">Hassan Mujtaba · 20220002085</div>
+</header>
+
+<div class="main">
+  <!-- ══════════════ LEFT PANEL ══════════════ -->
+  <div class="left-panel">
+
+    <div class="panel-section">
+      <div class="section-title">Algorithm Mode</div>
+      <div class="algo-tabs">
+        <button class="algo-tab active" onclick="setAlgo('brute')" id="tab-brute">Brute Force</button>
+        <button class="algo-tab" onclick="setAlgo('backtrack')" id="tab-backtrack">Backtracking</button>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="section-title">Graph Input</div>
+      <div class="presets">
+        <button class="preset-btn" onclick="loadPreset(0)" title="K4 subgraph">P1: K4</button>
+        <button class="preset-btn" onclick="loadPreset(1)" title="Petersen-like">P2: Web</button>
+        <button class="preset-btn" onclick="loadPreset(2)" title="Crown graph">P3: Crown</button>
+        <button class="preset-btn" onclick="loadPreset(3)" title="Dense with 4-clique">P4: Dense</button>
+        <button class="preset-btn" onclick="loadPreset(4)" title="Sparse graph">P5: Sparse</button>
+        <button class="preset-btn" onclick="loadPreset(5)" title="Wheel graph">P6: Wheel</button>
+      </div>
+      <div class="input-row">
+        <span class="input-label">Vertices (n)</span>
+        <input type="number" id="num-vertices" class="input-field" value="6" min="2" max="12" onchange="onVerticesChange()">
+      </div>
+      <div class="input-row">
+        <span class="input-label">Target k</span>
+        <input type="number" id="k-value" class="input-field" value="3" min="1" max="10">
+      </div>
+      <div class="input-row" style="align-items:flex-start">
+        <span class="input-label" style="margin-top:5px">Edges</span>
+        <textarea id="edge-input" class="input-field" placeholder="0-1, 1-2, 2-0, ...&#10;(auto-builds graph)"></textarea>
+      </div>
+      <div class="input-row">
+        <span class="input-label">Density</span>
+        <input type="range" id="density-slider" min="10" max="90" value="50" oninput="updateDensity(this.value)">
+        <span id="density-val" style="font-size:0.62rem;color:var(--text-muted);min-width:28px">50%</span>
+      </div>
+      <button class="build-btn" style="margin-top:4px;font-size:0.65rem;padding:5px;letter-spacing:0" onclick="generateRandomGraph()">↺ GENERATE RANDOM GRAPH</button>
+    </div>
+
+    <div class="panel-section">
+      <div class="section-title">Playback Controls</div>
+      <button class="build-btn" onclick="buildSteps()" id="build-btn">▶ BUILD STEPS</button>
+      <div class="control-buttons">
+        <button class="ctrl-btn" onclick="jumpToStart()">↤ START</button>
+        <button class="ctrl-btn" onclick="stepBack()">⟨ STEP</button>
+        <button class="ctrl-btn primary" onclick="togglePlay()" id="btn-play">▶ PLAY</button>
+        <button class="ctrl-btn" onclick="stepForward()">STEP ⟩</button>
+        <button class="ctrl-btn" onclick="jumpToEnd()">END ↦</button>
+        <button class="ctrl-btn danger" onclick="resetAnim()">↺ RESET</button>
+      </div>
+      <div class="input-row" style="margin-top:8px">
+        <span class="input-label">Speed</span>
+        <input type="range" id="speed-slider" min="1" max="10" value="5" oninput="updateSpeed(this.value)">
+        <span id="speed-val" style="font-size:0.62rem;color:var(--text-muted);min-width:28px">5×</span>
+      </div>
+      <div class="step-info">
+        <div class="info-badge">Step <span id="step-counter">—</span> / <span id="step-total">—</span></div>
+        <div class="info-badge">Clique: <span id="clique-display">—</span></div>
+      </div>
+      <div class="progress-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+      <div class="best-clique-bar">
+        <span class="bc-label">Best clique found so far:</span>
+        <span class="bc-val" id="best-clique-display">—</span>
+      </div>
+      <div class="key-hint"><kbd>Space</kbd> play/pause &nbsp; <kbd>←</kbd><kbd>→</kbd> step &nbsp; <kbd>Home</kbd><kbd>End</kbd> jump</div>
+    </div>
+
+    <div class="panel-section">
+      <div class="section-title">Status</div>
+      <div class="status-box checking" id="status-box">Press <strong>BUILD STEPS</strong> to begin.</div>
+    </div>
+
+    <div class="panel-section">
+      <div class="section-title">Pseudocode</div>
+      <div class="pseudocode" id="pseudocode-container"></div>
+    </div>
+
+    <div class="panel-section">
+      <div class="section-title">Live Statistics</div>
+      <div class="stats-grid">
+        <div class="stat-item">
+          <div class="stat-label">Subsets / Nodes</div>
+          <div class="stat-value" id="stat-subsets">0</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Prune Events</div>
+          <div class="stat-value red" id="stat-prunes">0</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Edge Checks</div>
+          <div class="stat-value yellow" id="stat-edges">0</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Backtracks</div>
+          <div class="stat-value" style="color:var(--candidate-color)" id="stat-backtracks">0</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end left panel -->
+
+  <!-- ══════════════ RIGHT PANEL ══════════════ -->
+  <div class="right-panel">
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('visualizer')" id="tab-vis">VISUALIZER</div>
+      <div class="tab" onclick="switchTab('comparison')" id="tab-cmp">COMPARISON</div>
+      <div class="tab" onclick="switchTab('np')" id="tab-np">NP-COMPLETENESS</div>
+      <div class="tab" onclick="switchTab('learn')" id="tab-lrn">LEARN</div>
+    </div>
+
+    <!-- ── VISUALIZER ── -->
+    <div class="tab-content active" id="content-visualizer">
+      <svg id="graph-canvas"></svg>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#3d5070;border:1.5px solid #3d5070"></div>Default</div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(0,212,170,0.3);border:2px solid #00d4aa"></div>In Clique</div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(107,140,255,0.3);border:2px solid #6b8cff"></div>Candidate</div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(255,107,107,0.3);border:2px solid #ff6b6b"></div>Pruned/Rejected</div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(255,209,102,0.3);border:2px solid #ffd166"></div>Currently Checking</div>
+      </div>
+    </div>
+
+    <!-- ── COMPARISON ── -->
+    <div class="tab-content" id="content-comparison">
+      <div class="comp-run-bar">
+        <button class="ctrl-btn primary" onclick="runComparison()" style="padding:5px 14px;font-size:0.65rem">▶ RUN BOTH</button>
+        <button class="ctrl-btn" onclick="stopComparison()" style="padding:5px 10px;font-size:0.65rem">⏹ STOP</button>
+        <div style="flex:1;display:flex;flex-direction:column;gap:3px">
+          <div style="display:flex;align-items:center;gap:7px;font-size:0.6rem;color:var(--text-muted)">
+            <span style="color:var(--accent2);min-width:78px">Brute Force</span>
+            <div class="comp-progress"><div class="comp-progress-fill bf" id="comp-bf-prog" style="width:0%"></div></div>
+            <span id="comp-bf-pct" style="min-width:32px;font-size:0.6rem;color:var(--text-muted)">0%</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:7px;font-size:0.6rem;color:var(--text-muted)">
+            <span style="color:var(--accent);min-width:78px">Backtracking</span>
+            <div class="comp-progress"><div class="comp-progress-fill bt" id="comp-bt-prog" style="width:0%"></div></div>
+            <span id="comp-bt-pct" style="min-width:32px;font-size:0.6rem;color:var(--text-muted)">0%</span>
+          </div>
+        </div>
+        <span style="font-size:0.62rem;color:var(--text-muted)" id="comp-speed-label">Speed:</span>
+        <input type="range" id="comp-speed" min="1" max="10" value="6" style="width:70px;accent-color:var(--accent)">
+      </div>
+      <div class="comparison-container">
+        <div class="comp-panel">
+          <div class="comp-header">
+            <span class="algo-name">Brute Force</span>
+            <span id="comp-bf-step" style="font-size:0.62rem;color:var(--text-muted)">—</span>
+          </div>
+          <svg id="comp-bf-svg" class="comp-svg"></svg>
+          <div class="comp-stats">
+            <div class="comp-stat">Subsets: <span id="comp-bf-subsets">0</span></div>
+            <div class="comp-stat">Edges chk: <span id="comp-bf-edges">0</span></div>
+            <div class="comp-stat">Result: <span id="comp-bf-found">—</span></div>
+          </div>
+        </div>
+        <div class="comp-panel">
+          <div class="comp-header">
+            <span class="algo-name">Backtracking + Pruning</span>
+            <span id="comp-bt-step" style="font-size:0.62rem;color:var(--text-muted)">—</span>
+          </div>
+          <svg id="comp-bt-svg" class="comp-svg"></svg>
+          <div class="comp-stats">
+            <div class="comp-stat">Nodes: <span id="comp-bt-nodes">0</span></div>
+            <div class="comp-stat">Prunes: <span id="comp-bt-prunes">0</span></div>
+            <div class="comp-stat">Result: <span id="comp-bt-found">—</span></div>
+          </div>
+        </div>
+      </div>
+      <div id="comp-summary" style="display:none;padding:8px 16px;background:var(--surface2);border-top:1px solid var(--border);font-size:0.65rem;flex-shrink:0;align-items:center;gap:18px">
+        <span style="color:var(--text-muted)">Pruning saved:</span>
+        <span id="comp-savings" style="color:var(--accent);font-weight:bold;font-size:0.9rem">—</span>
+        <span style="color:var(--text-muted)">fewer steps vs brute force</span>
+        <span style="color:var(--border);margin:0 4px">|</span>
+        <span style="color:var(--text-muted)">Backtracking used only</span>
+        <span id="comp-ratio" style="color:var(--accent3);font-weight:bold">—</span>
+        <span style="color:var(--text-muted)">of brute-force work</span>
+      </div>
+    </div>
+
+    <!-- ── NP-COMPLETENESS ── -->
+    <div class="tab-content" id="content-np">
+      <div class="np-tab">
+
+        <div class="proof-section">
+          <div class="proof-header">
+            <div class="proof-step-num">①</div>
+            <h3>Clique ∈ NP — Polynomial-time Verification</h3>
+          </div>
+          <div class="proof-body">
+            <p><strong>Certificate:</strong> A proposed set S of k vertices claimed to form a clique.</p>
+            <p><strong>Verifier steps:</strong></p>
+            <p class="indent">1. Check |S| = k &nbsp;&nbsp;→ O(k) time<br>
+            2. For every pair (u,v) ∈ S × S where u ≠ v, check edge (u,v) ∈ E &nbsp;→ O(k²) time</p>
+            <p>There are <span class="math">C(k,2) = k(k−1)/2</span> pairs. With an adjacency matrix, each lookup is O(1). Total verification: <span class="math">O(k²)</span> — clearly polynomial in the input size.</p>
+            <p><strong>Conclusion:</strong> A valid certificate is verifiable in polynomial time → <strong>Clique ∈ NP</strong> ✓</p>
+          </div>
+        </div>
+
+        <div class="proof-section">
+          <div class="proof-header">
+            <div class="proof-step-num">②</div>
+            <h3>NP-Hardness: Independent Set ≤ₚ Clique</h3>
+          </div>
+          <div class="proof-body">
+            <p><strong>We reduce from Independent Set</strong>, which is known NP-complete.</p>
+            <p><strong>Reduction Construction:</strong> Given an Independent Set instance <span class="math">(G, k)</span>, construct the complement graph <span class="math">G' = (V, E')</span> where:</p>
+            <p class="indent"><span class="math">E' = { (u,v) : u ≠ v  and  (u,v) ∉ E }</span><br>
+            — edges of G' are exactly the non-edges of G (same vertex set V).</p>
+            <p><strong>Forward Direction (IS → Clique):</strong><br>
+            Suppose S is an independent set of size k in G. By definition, no edge exists between any two vertices of S in G. Therefore, for every pair (u,v) ∈ S, the edge (u,v) exists in E' (since it was absent in E). Thus S forms a clique of size k in G'. ✓</p>
+            <p><strong>Backward Direction (Clique → IS):</strong><br>
+            Suppose S is a clique of size k in G'. Every pair (u,v) ∈ S has an edge in E'. By the complement definition, (u,v) ∉ E. So no pair in S shares an edge in G — S is an independent set of size k in G. ✓</p>
+            <p><strong>Polynomiality of Construction:</strong> Building G' requires iterating over all <span class="math">O(V²)</span> vertex pairs and flipping edge presence. This is clearly polynomial time. ✓</p>
+            <p><strong>Conclusion:</strong> Independent Set ≤ₚ Clique. Since Independent Set is NP-complete and Clique ∈ NP, we conclude <strong>Clique is NP-complete</strong>. ∎</p>
+          </div>
+        </div>
+
+        <div class="proof-section">
+          <div class="proof-header">
+            <div class="proof-step-num">③</div>
+            <h3>Reduction Diagram — G → G' (Complement)</h3>
+          </div>
+          <div class="proof-body">
+            <p style="margin-bottom:10px;color:var(--text-muted);font-size:0.67rem">Example: 4 vertices. G has IS={0,1} (no edge 0-1). G' = complement of G, where {0,1} becomes a clique.</p>
+            <div class="reduction-diagram">
+              <svg id="reduction-svg" style="display:block;width:100%;height:240px"></svg>
+            </div>
+            <div class="np-btn-row">
+              <button class="ctrl-btn" onclick="animateReduction()">▶ Animate Reduction</button>
+              <button class="ctrl-btn" onclick="resetReductionDiagram()">↺ Reset</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── LEARN ── -->
+    <div class="tab-content" id="content-learn">
+      <div class="learn-tab">
+
+        <div class="growth-chart-container">
+          <h3>Operation Count: Brute Force vs Backtracking (k=3 fixed)</h3>
+          <svg id="growth-chart" height="185"></svg>
+        </div>
+
+        <div class="collapsible">
+          <div class="collapsible-header" onclick="toggleCollapse('overview')">
+            <span>What is the Clique Problem?</span>
+            <span class="collapsible-arrow" id="arr-overview">▸</span>
+          </div>
+          <div class="collapsible-body" id="body-overview">
+            <p>A <strong>clique</strong> in an undirected graph G = (V, E) is a subset S ⊆ V where every two distinct vertices are connected by an edge. The subgraph induced by S is a complete graph Kₖ.</p>
+            <div class="concept-box">
+              <h4>Formal Decision Problem</h4>
+              Given G = (V, E) and integer k: does G contain a clique of size k?
+            </div>
+            <p>Clique appears across many real-world domains. In <strong>social networks</strong>, a clique is a group where everyone knows each other. In <strong>bioinformatics</strong>, cliques in protein interaction networks identify functional complexes. In <strong>coding theory</strong>, maximum cliques relate to error-correcting codes.</p>
+            <p>The problem is closely related to <strong>Independent Set</strong> — an IS in G is exactly a clique in the complement graph G'. This symmetry is the key to our NP-completeness proof.</p>
+          </div>
+        </div>
+
+        <div class="collapsible">
+          <div class="collapsible-header" onclick="toggleCollapse('paradigm')">
+            <span>Algorithm Paradigm — Backtracking (Divide and Conquer variant)</span>
+            <span class="collapsible-arrow" id="arr-paradigm">▸</span>
+          </div>
+          <div class="collapsible-body" id="body-paradigm">
+            <div class="concept-box yellow">
+              <h4>Design Paradigm: Backtracking — a Divide and Conquer variant</h4>
+              The problem is divided into subproblems: at each step, we decide whether to <em>include</em> or <em>exclude</em> a candidate vertex. Each branch recurses on a strictly smaller subproblem. Unlike pure divide-and-conquer (which always splits), backtracking <strong>abandons</strong> branches that cannot yield a solution — this is the pruning condition.
+            </div>
+            <p>Backtracking systematically explores all possible solutions by building partial candidates incrementally, abandoning branches the moment they cannot possibly reach a solution.</p>
+            <div class="concept-box">
+              <h4>The Pruning Condition</h4>
+              if |current_clique| + |candidates| &lt; k → backtrack immediately.<br>
+              Even if every remaining candidate joins the clique, we cannot reach size k.
+            </div>
+            <p>The <strong>candidate shrinking</strong> is equally important: after adding vertex v to the clique, the next candidate set is restricted to <strong>N(v) ∩ remaining_candidates</strong>. Only vertices adjacent to every member of the current clique can ever extend it.</p>
+            <div class="concept-box">
+              <h4>Branching Strategy</h4>
+              For each candidate vertex v:<br>
+              • Branch 1 (include v): add v to clique, recurse with N(v) ∩ remaining candidates<br>
+              • Branch 2 (exclude v): skip v, move to next candidate<br>
+              Pruning collapses entire Branch 2 subtrees the moment |clique|+|cands| &lt; k.
+            </div>
+            <div class="concept-box red">
+              <h4>Approximation Quality & Trade-offs</h4>
+              This is an <strong>exact</strong> algorithm — it finds the true k-clique if one exists, or proves none exists. The trade-off is time: worst case is still exponential. In practice, heavy pruning on sparse graphs makes it far faster than brute force. On dense graphs with many cliques, pruning fires less often. The algorithm is exact but not polynomial — because Clique is NP-complete, no polynomial exact algorithm is known (unless P=NP).
+            </div>
+          </div>
+        </div>
+
+        <div class="collapsible">
+          <div class="collapsible-header" onclick="toggleCollapse('worked')">
+            <span>Worked Example — Trace Through Backtracking</span>
+            <span class="collapsible-arrow" id="arr-worked">▸</span>
+          </div>
+          <div class="collapsible-body" id="body-worked">
+            <p>Graph: {0,1,2,3}, Edges: {0-1, 1-2, 2-0, 0-3}. Find k=3 clique.</p>
+            <div class="concept-box">
+              <h4>Step-by-step trace</h4>
+              Start: clique=[], candidates=[0,1,2,3]<br>
+              → Add 0: clique=[0], cands=[1,2,3]∩N(0)=[1,2,3]<br>
+              → → Add 1: clique=[0,1], cands=[2,3]∩N(1)=[2]<br>
+              → → → Add 2: clique=[0,1,2], |clique|=3=k → <strong>FOUND ✓</strong>
+            </div>
+            <p>Without vertex 3 (not adjacent to 1 or 2), it never enters the candidates after we pick 1. The candidate shrinking naturally excludes it — no explicit check needed.</p>
+            <div class="concept-box red">
+              <h4>Prune Example</h4>
+              If we tried: clique=[3], candidates=[ ] (only N(3)={0}, but 0 already excluded)<br>
+              → |clique|=1 + |cands|=0 = 1 &lt; k=3 → PRUNE. Entire subtree cut.
+            </div>
+          </div>
+        </div>
+
+        <div class="collapsible">
+          <div class="collapsible-header" onclick="toggleCollapse('complexity')">
+            <span>Complexity Analysis & Trade-offs</span>
+            <span class="collapsible-arrow" id="arr-complexity">▸</span>
+          </div>
+          <div class="collapsible-body" id="body-complexity">
+            <div class="concept-box red">
+              <h4>Brute Force</h4>
+              Time: O(C(n,k) · k²) — enumerate all k-subsets, verify each pair.<br>
+              For n=15, k=5: C(15,5)=3003 subsets × 10 pair checks = 30,030 operations.<br>
+              For n=20, k=8: C(20,8)=125,970 subsets × 28 checks = ~3.5M operations.
+            </div>
+            <div class="concept-box">
+              <h4>Backtracking</h4>
+              Worst case: still exponential (NP-complete means no known poly-time algorithm).<br>
+              In practice: pruning eliminates huge portions of the search tree.<br>
+              Watch the Prune Events counter — each prune removes an entire subtree.
+            </div>
+            <p>The <strong>P vs NP question</strong> asks whether every NP problem has a polynomial-time algorithm. If P=NP, then Clique would be solvable in O(nᶜ) time. This remains the most famous open problem in computer science.</p>
+            <div class="concept-box yellow">
+              <h4>Practical Implications</h4>
+              For large graphs, exact algorithms are too slow. Practitioners use:<br>
+              • Greedy heuristics (find large but not necessarily maximum cliques)<br>
+              • Approximation algorithms (guarantee a clique of size ≥ OPT/f(n))<br>
+              • Branch-and-bound with tight bounds (state of the art for exact solutions)
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- end right panel -->
+</div><!-- end main -->
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════
+let graph = [];
+let n = 0;
+let k = 3;
+let vertexPos = [];
+let algo = 'brute';
+
+let steps = [];
+let stepIdx = -1;
+let playing = false;
+let playTimer = null;
+let speed = 5;
+let bestCliqueFound = [];
+
+// ═══════════════════════════════════════════════════════════
+// PRESETS
+// ═══════════════════════════════════════════════════════════
+const PRESETS = [
+  { name:'K4 subgraph', n:6, k:4, edges:[[0,1],[0,2],[0,3],[1,2],[1,3],[2,3],[3,4],[4,5]] },
+  { name:'Web graph',   n:8, k:3, edges:[[0,1],[1,2],[2,3],[3,4],[4,0],[0,5],[1,6],[2,7],[3,5],[4,6],[5,7],[6,7],[5,6]] },
+  { name:'Crown graph', n:6, k:2, edges:[[0,2],[0,3],[0,4],[1,2],[1,3],[1,5],[2,4],[3,5],[4,5]] },
+  { name:'Dense 4-clique', n:7, k:4, edges:[[0,1],[0,2],[0,3],[0,4],[1,2],[1,3],[1,4],[2,3],[2,4],[3,4],[4,5],[5,6],[4,6]] },
+  { name:'Sparse path', n:7, k:2, edges:[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[0,3],[1,4]] },
+  { name:'Wheel W6',   n:7, k:3, edges:[[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[1,2],[2,3],[3,4],[4,5],[5,6],[6,1]] }
+];
+
+function loadPreset(idx) {
+  const p = PRESETS[idx];
+  n = p.n; k = p.k;
+  document.getElementById('num-vertices').value = n;
+  document.getElementById('k-value').value = k;
+  buildAdjMatrix(n, p.edges);
+  document.getElementById('edge-input').value = p.edges.map(e=>e[0]+'-'+e[1]).join(', ');
+  placeVertices('graph-canvas');
+  resetAnim();
+  renderGraph('graph-canvas', graph, vertexPos, n, [], [], [], []);
+}
+
+function buildAdjMatrix(vCount, edges) {
+  graph = Array.from({length:vCount}, () => new Array(vCount).fill(0));
+  for (const [a,b] of edges) {
+    if (a < vCount && b < vCount && a !== b) { graph[a][b]=1; graph[b][a]=1; }
+  }
+}
+
+function parseEdges(str) {
+  const edges = [];
+  str.split(/[,\s;]+/).forEach(p => {
+    const m = p.match(/(\d+)\s*[-–]\s*(\d+)/);
+    if (m) edges.push([parseInt(m[1]), parseInt(m[2])]);
+  });
+  return edges;
+}
+
+function generateRandomGraph() {
+  n = Math.max(2, Math.min(12, parseInt(document.getElementById('num-vertices').value) || 6));
+  k = parseInt(document.getElementById('k-value').value) || 3;
+  const density = parseInt(document.getElementById('density-slider').value) / 100;
+  const edges = [];
+  for (let i=0; i<n; i++) for (let j=i+1; j<n; j++) if (Math.random()<density) edges.push([i,j]);
+  buildAdjMatrix(n, edges);
+  document.getElementById('edge-input').value = edges.map(e=>e[0]+'-'+e[1]).join(', ');
+  placeVertices('graph-canvas');
+  resetAnim();
+  renderGraph('graph-canvas', graph, vertexPos, n, [], [], [], []);
+}
+
+function onVerticesChange() { generateRandomGraph(); }
+
+function updateDensity(val) {
+  document.getElementById('density-val').textContent = val + '%';
+}
+
+// ═══════════════════════════════════════════════════════════
+// VERTEX PLACEMENT
+// ═══════════════════════════════════════════════════════════
+function placeVertices(svgId) {
+  const svg = document.getElementById(svgId);
+  if (!svg) return [];
+  const rect = svg.getBoundingClientRect();
+  const W = rect.width || 600, H = rect.height || 400;
+  const cx=W/2, cy=H/2, r=Math.min(W,H)*0.37;
+  const pos = [];
+  for (let i=0; i<n; i++) {
+    const a = (2*Math.PI*i/n) - Math.PI/2;
+    pos.push({ x: cx+r*Math.cos(a), y: cy+r*Math.sin(a) });
+  }
+  if (svgId === 'graph-canvas') vertexPos = pos;
+  return pos;
+}
+
+function computePos(svgId, vn) {
+  const svg = document.getElementById(svgId);
+  if (!svg) return [];
+  const rect = svg.getBoundingClientRect();
+  const W = rect.width || 350, H = rect.height || 300;
+  const cx=W/2, cy=H/2, r=Math.min(W,H)*0.36;
+  return Array.from({length:vn}, (_,i) => {
+    const a = (2*Math.PI*i/vn) - Math.PI/2;
+    return { x: cx+r*Math.cos(a), y: cy+r*Math.sin(a) };
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// GRAPH RENDERER
+// ═══════════════════════════════════════════════════════════
+function renderGraph(svgId, adj, pos, vn, clique, candidates, checking, pruned, flashFound=false) {
+  const svg = document.getElementById(svgId);
+  if (!svg || !pos || pos.length < vn) return;
+  svg.innerHTML = '';
+  const ns = 'http://www.w3.org/2000/svg';
+  const cliqueSet = new Set(clique);
+  const candSet   = new Set(candidates);
+  const chkSet    = new Set(checking);
+  const prunSet   = new Set(pruned);
+  const VR = Math.max(12, Math.min(20, 280/(vn*1.8)));
+
+  // pulse rings on found clique vertices
+  if (flashFound && clique.length) {
+    for (const v of clique) {
+      const ring = document.createElementNS(ns,'circle');
+      ring.setAttribute('cx',pos[v].x); ring.setAttribute('cy',pos[v].y); ring.setAttribute('r',VR);
+      ring.setAttribute('fill','none'); ring.setAttribute('stroke','var(--accent)');
+      ring.setAttribute('stroke-width','3');
+      ring.classList.add('pulse-ring');
+      svg.appendChild(ring);
+    }
+  }
+
+  // edges
+  for (let i=0; i<vn; i++) for (let j=i+1; j<vn; j++) {
+    if (!adj[i]||!adj[i][j]) continue;
+    const line = document.createElementNS(ns,'line');
+    line.setAttribute('x1',pos[i].x); line.setAttribute('y1',pos[i].y);
+    line.setAttribute('x2',pos[j].x); line.setAttribute('y2',pos[j].y);
+    const bothClique = cliqueSet.has(i)&&cliqueSet.has(j);
+    const bothCheck  = chkSet.has(i)&&chkSet.has(j);
+    if (bothClique)      { line.setAttribute('stroke','var(--edge-clique)'); line.setAttribute('stroke-width','3'); line.setAttribute('opacity','0.9'); }
+    else if (bothCheck)  { line.setAttribute('stroke','var(--edge-checking)'); line.setAttribute('stroke-width','2.5'); line.setAttribute('opacity','0.85'); }
+    else                 { line.setAttribute('stroke','var(--edge-normal)'); line.setAttribute('stroke-width','1.5'); line.setAttribute('opacity','0.45'); }
+    svg.appendChild(line);
+  }
+
+  // vertices
+  for (let i=0; i<vn; i++) {
+    const {x,y} = pos[i];
+    let fill='rgba(61,80,112,0.25)', stroke='#3d5070', sw=1.5;
+    if      (cliqueSet.has(i)) { fill='rgba(0,212,170,0.22)';   stroke='var(--accent)';     sw=3;   }
+    else if (prunSet.has(i))   { fill='rgba(255,107,107,0.18)'; stroke='var(--accent2)';    sw=2;   }
+    else if (chkSet.has(i))    { fill='rgba(255,209,102,0.22)'; stroke='var(--accent3)';    sw=2.5; }
+    else if (candSet.has(i))   { fill='rgba(107,140,255,0.2)';  stroke='var(--candidate-color)'; sw=2; }
+    const c = document.createElementNS(ns,'circle');
+    c.setAttribute('cx',x); c.setAttribute('cy',y); c.setAttribute('r',VR);
+    c.setAttribute('fill',fill); c.setAttribute('stroke',stroke); c.setAttribute('stroke-width',sw);
+    if (flashFound && cliqueSet.has(i)) c.style.animation='found-flash 0.4s ease-in-out 4';
+    svg.appendChild(c);
+    const t = document.createElementNS(ns,'text');
+    t.setAttribute('x',x); t.setAttribute('y',y+1);
+    t.setAttribute('text-anchor','middle'); t.setAttribute('dominant-baseline','middle');
+    t.setAttribute('font-family','Courier New,monospace'); t.setAttribute('font-size',Math.max(9,VR-3));
+    t.setAttribute('fill',stroke); t.setAttribute('font-weight','bold');
+    t.textContent = i;
+    svg.appendChild(t);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// PSEUDOCODE DEFINITIONS
+// ═══════════════════════════════════════════════════════════
+const PC_BRUTE = [
+  '<span class="pseudo-fn">BruteForce</span>(G, k):',
+  '  subsets ← all C(n,k) subsets of V',
+  '  <span class="pseudo-kw">for each</span> S in subsets:',
+  '    isClique ← <span class="pseudo-kw">true</span>',
+  '    <span class="pseudo-kw">for each</span> pair (u,v) in S:',
+  '      <span class="pseudo-kw">if</span> (u,v) ∉ E:',
+  '        isClique ← <span class="pseudo-kw">false</span>; <span class="pseudo-kw">break</span>',
+  '    <span class="pseudo-kw">if</span> isClique: <span class="pseudo-kw">return</span> S   <span class="pseudo-cm">// ✓ found</span>',
+  '  <span class="pseudo-kw">return</span> null   <span class="pseudo-cm">// no k-clique</span>',
+];
+const PC_BACK = [
+  '<span class="pseudo-fn">Backtrack</span>(G, k, clique, cands):',
+  '  <span class="pseudo-kw">if</span> |clique| = k: <span class="pseudo-kw">return</span> clique   <span class="pseudo-cm">// ✓ found</span>',
+  '  <span class="pseudo-kw">if</span> |clique|+|cands| < k: <span class="pseudo-kw">return</span>   <span class="pseudo-cm">// prune</span>',
+  '  <span class="pseudo-kw">for each</span> v in cands:',
+  '    newCands ← cands[v+1..] ∩ N(v)',
+  '    clique.add(v)',
+  '    res ← <span class="pseudo-fn">Backtrack</span>(G,k,clique,newCands)',
+  '    <span class="pseudo-kw">if</span> res ≠ null: <span class="pseudo-kw">return</span> res',
+  '    clique.remove(v)   <span class="pseudo-cm">// backtrack</span>',
+  '  <span class="pseudo-kw">return</span> null',
+];
+
+function renderPseudocode(activeLine=-1) {
+  const code = algo==='brute' ? PC_BRUTE : PC_BACK;
+  document.getElementById('pseudocode-container').innerHTML =
+    code.map((l,i)=>`<span class="pseudo-line${i===activeLine?' active':''}">${l}</span>`).join('');
+  if (activeLine>=0) {
+    const el = document.querySelector('.pseudo-line.active');
+    if (el) el.scrollIntoView({block:'nearest'});
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// COMBINATION GENERATOR
+// ═══════════════════════════════════════════════════════════
+function getCombinations(arr, r) {
+  if (r===0) return [[]];
+  if (arr.length<r) return [];
+  const [first,...rest] = arr;
+  return [
+    ...getCombinations(rest,r-1).map(c=>[first,...c]),
+    ...getCombinations(rest,r)
+  ];
+}
+
+// ═══════════════════════════════════════════════════════════
+// BRUTE FORCE STEP GENERATOR
+// ═══════════════════════════════════════════════════════════
+function generateBruteForceSteps() {
+  const stps = [];
+  const verts = Array.from({length:n},(_,i)=>i);
+  const combos = getCombinations(verts, k);
+  let edgeCnt=0, subCnt=0;
+
+  stps.push({ type:'init', clique:[], candidates:[], checking:[], pruned:[],
+    pseudoLine:0, explanation:`Brute force on ${n} vertices, k=${k}. Checking all <strong>C(${n},${k})=${combos.length}</strong> subsets.`,
+    stats:{subsets:0,prunes:0,edges:0,backtracks:0}, best:[] });
+
+  let foundClique = null;
+
+  for (const combo of combos) {
+    subCnt++;
+    stps.push({ type:'check_subset', clique:[], candidates:combo, checking:combo, pruned:[],
+      pseudoLine:2, explanation:`Subset ${subCnt}/${combos.length}: testing {${combo.join(',')}}`,
+      stats:{subsets:subCnt,prunes:0,edges:edgeCnt,backtracks:0}, best:foundClique||[] });
+
+    let isClique=true;
+    for (let i=0; i<combo.length&&isClique; i++) {
+      for (let j=i+1; j<combo.length; j++) {
+        edgeCnt++;
+        const u=combo[i], v=combo[j];
+        stps.push({ type:'check_edge', clique:[], candidates:combo, checking:[u,v], pruned:[],
+          pseudoLine:5, explanation:`Checking edge (${u},${v}) → ${graph[u][v]?'<strong style="color:var(--accent)">exists ✓</strong>':'<strong style="color:var(--accent2)">MISSING ✗</strong>'}`,
+          stats:{subsets:subCnt,prunes:0,edges:edgeCnt,backtracks:0}, best:foundClique||[] });
+        if (!graph[u][v]) {
+          isClique=false;
+          stps.push({ type:'not_clique', clique:[], candidates:[], checking:[], pruned:combo,
+            pseudoLine:6, explanation:`Edge (${u},${v}) missing → {${combo.join(',')}} is <strong style="color:var(--accent2)">NOT a clique</strong>`,
+            stats:{subsets:subCnt,prunes:0,edges:edgeCnt,backtracks:0}, best:foundClique||[] });
+          break;
+        }
+      }
+    }
+
+    if (isClique) {
+      foundClique = combo;
+      stps.push({ type:'found', clique:combo, candidates:[], checking:[], pruned:[],
+        pseudoLine:7, explanation:`<strong style="color:var(--accent)">✓ CLIQUE FOUND!</strong> {${combo.join(',')}} is a clique of size <strong>${k}</strong>!`,
+        stats:{subsets:subCnt,prunes:0,edges:edgeCnt,backtracks:0}, best:combo, flash:true });
+      break;
+    }
+  }
+
+  if (!foundClique) {
+    stps.push({ type:'no_clique', clique:[], candidates:[], checking:[], pruned:verts,
+      pseudoLine:8, explanation:`<strong style="color:var(--accent2)">No clique of size ${k}</strong> found after checking all ${combos.length} subsets.`,
+      stats:{subsets:subCnt,prunes:0,edges:edgeCnt,backtracks:0}, best:[] });
+  }
+
+  return stps;
+}
+
+// ═══════════════════════════════════════════════════════════
+// BACKTRACKING STEP GENERATOR
+// ═══════════════════════════════════════════════════════════
+function generateBacktrackSteps() {
+  const stps = [];
+  const verts = Array.from({length:n},(_,i)=>i);
+  let edgeCnt=0, pruneCnt=0, backtrackCnt=0, nodeCnt=0;
+  let done = false;
+  let currentBest = [];
+
+  stps.push({ type:'init', clique:[], candidates:verts, checking:[], pruned:[],
+    pseudoLine:0, explanation:`Backtracking start. Candidates: {${verts.join(',')}}. Target k=${k}.`,
+    stats:{subsets:0,prunes:0,edges:0,backtracks:0}, best:[] });
+
+  function bt(clique, candidates) {
+    if (done) return;
+    nodeCnt++;
+    if (clique.length > currentBest.length) currentBest = [...clique];
+
+    if (clique.length === k) {
+      done = true;
+      stps.push({ type:'found', clique:[...clique], candidates:[], checking:[], pruned:[],
+        pseudoLine:1, explanation:`<strong style="color:var(--accent)">✓ CLIQUE FOUND!</strong> {${clique.join(',')}} is a clique of size <strong>${k}</strong>!`,
+        stats:{subsets:nodeCnt,prunes:pruneCnt,edges:edgeCnt,backtracks:backtrackCnt}, best:[...clique], flash:true });
+      return;
+    }
+
+    if (clique.length + candidates.length < k) {
+      pruneCnt++;
+      stps.push({ type:'prune', clique:[...clique], candidates:[...candidates], checking:[], pruned:[...candidates],
+        pseudoLine:2, explanation:`<strong style="color:var(--accent2)">PRUNE!</strong> |clique|=${clique.length} + |cands|=${candidates.length} = ${clique.length+candidates.length} < k=${k}`,
+        stats:{subsets:nodeCnt,prunes:pruneCnt,edges:edgeCnt,backtracks:backtrackCnt}, best:[...currentBest] });
+      return;
+    }
+
+    for (let i=0; i<candidates.length; i++) {
+      if (done) return;
+      const v = candidates[i];
+      const remaining = candidates.slice(i+1);
+
+      stps.push({ type:'consider', clique:[...clique], candidates:[...candidates], checking:[v], pruned:[],
+        pseudoLine:3, explanation:`Considering vertex <strong>${v}</strong>. Current clique: {${clique.join(',')||'∅'}}`,
+        stats:{subsets:nodeCnt,prunes:pruneCnt,edges:edgeCnt,backtracks:backtrackCnt}, best:[...currentBest] });
+
+      const newCands = remaining.filter(u => { edgeCnt++; return graph[v][u]; });
+
+      stps.push({ type:'add_vertex', clique:[...clique,v], candidates:newCands, checking:[v], pruned:[],
+        pseudoLine:5, explanation:`Adding <strong>${v}</strong> → clique={${[...clique,v].join(',')}}. New cands: {${newCands.join(',')||'∅'}}`,
+        stats:{subsets:nodeCnt,prunes:pruneCnt,edges:edgeCnt,backtracks:backtrackCnt}, best:[...currentBest] });
+
+      bt([...clique,v], newCands);
+
+      if (!done) {
+        backtrackCnt++;
+        stps.push({ type:'backtrack', clique:[...clique], candidates:[...candidates], checking:[], pruned:[v],
+          pseudoLine:8, explanation:`<strong style="color:var(--candidate-color)">Backtrack</strong>: removing ${v}. Back to clique: {${clique.join(',')||'∅'}}`,
+          stats:{subsets:nodeCnt,prunes:pruneCnt,edges:edgeCnt,backtracks:backtrackCnt}, best:[...currentBest] });
+      }
+    }
+
+    if (!done) {
+      stps.push({ type:'exhausted', clique:[...clique], candidates:[], checking:[], pruned:[],
+        pseudoLine:9, explanation:`Candidates exhausted for {${clique.join(',')||'∅'}}. Returning null.`,
+        stats:{subsets:nodeCnt,prunes:pruneCnt,edges:edgeCnt,backtracks:backtrackCnt}, best:[...currentBest] });
+    }
+  }
+
+  bt([], verts);
+
+  if (!done) {
+    stps.push({ type:'no_clique', clique:[], candidates:[], checking:[], pruned:verts,
+      pseudoLine:9, explanation:`<strong style="color:var(--accent2)">No clique of size ${k}</strong> exists in this graph.`,
+      stats:{subsets:nodeCnt,prunes:pruneCnt,edges:edgeCnt,backtracks:backtrackCnt}, best:[...currentBest] });
+  }
+
+  return stps;
+}
+
+// ═══════════════════════════════════════════════════════════
+// ANIMATION CONTROLLER
+// ═══════════════════════════════════════════════════════════
+function buildSteps() {
+  k = parseInt(document.getElementById('k-value').value) || 3;
+  const edgeStr = document.getElementById('edge-input').value.trim();
+  n = parseInt(document.getElementById('num-vertices').value) || 6;
+  if (edgeStr) { buildAdjMatrix(n, parseEdges(edgeStr)); }
+  placeVertices('graph-canvas');
+  steps = algo==='brute' ? generateBruteForceSteps() : generateBacktrackSteps();
+  stepIdx = 0;
+  bestCliqueFound = [];
+  document.getElementById('step-total').textContent = steps.length-1;
+  document.getElementById('best-clique-display').textContent = '—';
+  renderPseudocode(-1);
+  applyStep(steps[0]);
+}
+
+function applyStep(step) {
+  if (!step) return;
+  const flash = step.flash && step.type==='found';
+  renderGraph('graph-canvas', graph, vertexPos, n, step.clique, step.candidates, step.checking, step.pruned, flash);
+  renderPseudocode(step.pseudoLine);
+
+  const box = document.getElementById('status-box');
+  box.innerHTML = step.explanation;
+  const cls = step.type==='found'?'found': step.type==='prune'||step.type==='no_clique'?'none':'checking';
+  box.className = 'status-box '+cls;
+
+  document.getElementById('step-counter').textContent = stepIdx;
+  document.getElementById('clique-display').textContent =
+    step.clique.length ? '{'+step.clique.join(',')+'}' : '—';
+
+  // progress bar
+  if (steps.length>1) {
+    const pct = (stepIdx/(steps.length-1)*100).toFixed(1);
+    document.getElementById('progress-bar').style.width = pct+'%';
+  }
+
+  // best clique
+  if (step.best && step.best.length > bestCliqueFound.length) {
+    bestCliqueFound = step.best;
+    document.getElementById('best-clique-display').textContent =
+      '{'+step.best.join(',')+'}  (size '+step.best.length+')';
+  }
+
+  if (step.stats) {
+    document.getElementById('stat-subsets').textContent   = step.stats.subsets;
+    document.getElementById('stat-prunes').textContent    = step.stats.prunes;
+    document.getElementById('stat-edges').textContent     = step.stats.edges;
+    document.getElementById('stat-backtracks').textContent= step.stats.backtracks;
+  }
+}
+
+function stepForward()  { if (stepIdx<steps.length-1) { stepIdx++; applyStep(steps[stepIdx]); } }
+function stepBack()     { if (stepIdx>0)              { stepIdx--; applyStep(steps[stepIdx]); } }
+function jumpToEnd()    { if (!steps.length) return; stepIdx=steps.length-1; applyStep(steps[stepIdx]); }
+function jumpToStart()  { if (!steps.length) return; stepIdx=0; applyStep(steps[stepIdx]); }
+
+function togglePlay() {
+  if (playing) pauseAnim(); else playAnim();
+}
+
+function playAnim() {
+  if (!steps.length) { buildSteps(); return; }
+  if (stepIdx >= steps.length-1) stepIdx=0;
+  playing=true;
+  const btn=document.getElementById('btn-play');
+  btn.textContent='⏸ PAUSE'; btn.classList.add('danger'); btn.classList.remove('primary');
+  tick();
+}
+
+function tick() {
+  if (!playing) return;
+  const delay = Math.max(40, 1200-speed*110);
+  playTimer = setTimeout(()=>{
+    if (stepIdx<steps.length-1) { stepIdx++; applyStep(steps[stepIdx]); tick(); }
+    else pauseAnim();
+  }, delay);
+}
+
+function pauseAnim() {
+  playing=false; clearTimeout(playTimer);
+  const btn=document.getElementById('btn-play');
+  btn.textContent='▶ PLAY'; btn.classList.remove('danger'); btn.classList.add('primary');
+}
+
+function resetAnim() {
+  pauseAnim();
+  steps=[]; stepIdx=-1; bestCliqueFound=[];
+  ['step-counter','step-total'].forEach(id=>document.getElementById(id).textContent='—');
+  document.getElementById('clique-display').textContent='—';
+  document.getElementById('best-clique-display').textContent='—';
+  document.getElementById('progress-bar').style.width='0%';
+  ['stat-subsets','stat-prunes','stat-edges','stat-backtracks'].forEach(id=>document.getElementById(id).textContent='0');
+  const box=document.getElementById('status-box');
+  box.innerHTML='Press <strong>BUILD STEPS</strong> to generate algorithm trace.';
+  box.className='status-box checking';
+  renderPseudocode(-1);
+  if (n>0&&vertexPos.length) renderGraph('graph-canvas',graph,vertexPos,n,[],[],[],[]);
+}
+
+function updateSpeed(val) {
+  speed=parseInt(val);
+  document.getElementById('speed-val').textContent=val+'×';
+}
+
+// ═══════════════════════════════════════════════════════════
+// KEYBOARD SHORTCUTS
+// ═══════════════════════════════════════════════════════════
+document.addEventListener('keydown', e => {
+  if (['INPUT','TEXTAREA'].includes(e.target.tagName)) return;
+  if (e.key===' ') { e.preventDefault(); togglePlay(); }
+  else if (e.key==='ArrowRight') { e.preventDefault(); stepForward(); }
+  else if (e.key==='ArrowLeft')  { e.preventDefault(); stepBack(); }
+  else if (e.key==='Home')       { e.preventDefault(); jumpToStart(); }
+  else if (e.key==='End')        { e.preventDefault(); jumpToEnd(); }
+});
+
+// ═══════════════════════════════════════════════════════════
+// ALGO SWITCHER
+// ═══════════════════════════════════════════════════════════
+function setAlgo(a) {
+  algo=a;
+  document.getElementById('tab-brute').classList.toggle('active', a==='brute');
+  document.getElementById('tab-backtrack').classList.toggle('active', a==='backtrack');
+  resetAnim();
+  renderPseudocode(-1);
+}
+
+// ═══════════════════════════════════════════════════════════
+// TAB SWITCHER
+// ═══════════════════════════════════════════════════════════
+function switchTab(name) {
+  const map = {visualizer:'vis',comparison:'cmp',np:'np',learn:'lrn'};
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  document.getElementById('tab-'+map[name]).classList.add('active');
+  document.getElementById('content-'+name).classList.add('active');
+  if (name==='np')    setTimeout(renderReductionDiagram, 50);
+  if (name==='learn') setTimeout(renderGrowthChart, 50);
+  if (name==='comparison') { setTimeout(()=>{ initCompSvgs(); }, 50); }
+}
+
+// ═══════════════════════════════════════════════════════════
+// COMPARISON TAB — ANIMATED SIDE BY SIDE
+// ═══════════════════════════════════════════════════════════
+let compBfSteps=[], compBtSteps=[], compBfIdx=0, compBtIdx=0;
+let compBfDone=false, compBtDone=false;
+let compTimer=null, compRunning=false;
+let compPosL=[], compPosR=[];
+
+function initCompSvgs() {
+  compPosL = computePos('comp-bf-svg', n);
+  compPosR = computePos('comp-bt-svg', n);
+  renderGraph('comp-bf-svg', graph, compPosL, n, [], [], [], []);
+  renderGraph('comp-bt-svg', graph, compPosR, n, [], [], [], []);
+}
+
+function runComparison() {
+  if (!n) return;
+  stopComparison();
+  compPosL = computePos('comp-bf-svg', n);
+  compPosR = computePos('comp-bt-svg', n);
+  compBfSteps = generateBruteForceSteps();
+  compBtSteps = generateBacktrackSteps();
+  compBfIdx=0; compBtIdx=0;
+  compBfDone=false; compBtDone=false;
+  compRunning=true;
+  document.getElementById('comp-bf-step').textContent='Running…';
+  document.getElementById('comp-bt-step').textContent='Running…';
+  document.getElementById('comp-summary').style.display='none';
+  // reset stats
+  ['comp-bf-subsets','comp-bf-edges','comp-bt-nodes','comp-bt-prunes'].forEach(id=>document.getElementById(id).textContent='0');
+  ['comp-bf-found','comp-bt-found'].forEach(id=>document.getElementById(id).textContent='—');
+  compTick();
+}
+
+function compTick() {
+  if (!compRunning) return;
+  const spd = parseInt(document.getElementById('comp-speed').value);
+  const delay = Math.max(30, 900 - spd*85);
+
+  if (!compBfDone) {
+    compBfIdx = Math.min(compBfIdx+1, compBfSteps.length-1);
+    const s = compBfSteps[compBfIdx];
+    renderGraph('comp-bf-svg', graph, compPosL, n, s.clique, s.candidates, s.checking, s.pruned, s.flash);
+    document.getElementById('comp-bf-step').textContent = `${compBfIdx}/${compBfSteps.length-1}`;
+    document.getElementById('comp-bf-subsets').textContent = s.stats.subsets;
+    document.getElementById('comp-bf-edges').textContent   = s.stats.edges;
+    const pct = Math.round(compBfIdx/(compBfSteps.length-1)*100);
+    document.getElementById('comp-bf-prog').style.width = pct+'%';
+    document.getElementById('comp-bf-pct').textContent = pct+'%';
+    if (compBfIdx >= compBfSteps.length-1) {
+      compBfDone=true;
+      const last=compBfSteps[compBfSteps.length-1];
+      document.getElementById('comp-bf-found').textContent = last.type==='found'?'{'+last.clique.join(',')+'}':'None';
+    }
+  }
+
+  if (!compBtDone) {
+    compBtIdx = Math.min(compBtIdx+1, compBtSteps.length-1);
+    const s = compBtSteps[compBtIdx];
+    renderGraph('comp-bt-svg', graph, compPosR, n, s.clique, s.candidates, s.checking, s.pruned, s.flash);
+    document.getElementById('comp-bt-step').textContent = `${compBtIdx}/${compBtSteps.length-1}`;
+    document.getElementById('comp-bt-nodes').textContent  = s.stats.subsets;
+    document.getElementById('comp-bt-prunes').textContent = s.stats.prunes;
+    const pct = Math.round(compBtIdx/(compBtSteps.length-1)*100);
+    document.getElementById('comp-bt-prog').style.width = pct+'%';
+    document.getElementById('comp-bt-pct').textContent = pct+'%';
+    if (compBtIdx >= compBtSteps.length-1) {
+      compBtDone=true;
+      const last=compBtSteps[compBtSteps.length-1];
+      document.getElementById('comp-bt-found').textContent = last.type==='found'?'{'+last.clique.join(',')+'}':'None';
+    }
+  }
+
+  if (compBfDone && compBtDone) {
+    compRunning=false;
+    document.getElementById('comp-bf-step').textContent='Done';
+    document.getElementById('comp-bt-step').textContent='Done';
+    // Show reduction summary
+    const bfTotal = compBfSteps.length - 1;
+    const btTotal = compBtSteps.length - 1;
+    const saved = bfTotal - btTotal;
+    const ratio = bfTotal > 0 ? ((btTotal/bfTotal)*100).toFixed(1)+'%' : '—';
+    const savedStr = saved > 0 ? '+'+saved+' steps' : (saved===0?'same':'—');
+    const summary = document.getElementById('comp-summary');
+    summary.style.display='flex';
+    document.getElementById('comp-savings').textContent = saved > 0 ? saved+' steps' : (saved===0?'0 (same)':'—');
+    document.getElementById('comp-ratio').textContent = ratio;
+    return;
+  }
+
+  compTimer = setTimeout(compTick, delay);
+}
+
+function stopComparison() {
+  compRunning=false;
+  clearTimeout(compTimer);
+  document.getElementById('comp-bf-step').textContent='Stopped';
+  document.getElementById('comp-bt-step').textContent='Stopped';
+  document.getElementById('comp-summary').style.display='none';
+}
+
+function renderComparisonTab() { initCompSvgs(); }
+
+// ═══════════════════════════════════════════════════════════
+// REDUCTION DIAGRAM — ANIMATED
+// ═══════════════════════════════════════════════════════════
+let redTimer=null, redStep=0, redRunning=false;
+const RED_VN=4;
+const G_EDGES =[[0,2],[1,3],[2,3]];
+const GP_EDGES=[[0,1],[0,3],[1,2]]; // complement of G_EDGES for 4 verts
+const IS_VERTS=[0,1];
+const CLIQUE_VERTS=[0,1];
+
+function renderReductionDiagram(highlightGpEdges=[]) {
+  const svg = document.getElementById('reduction-svg');
+  if (!svg) return;
+  const W = Math.max(400, svg.parentElement.clientWidth||500);
+  const H = 240;
+  svg.style.height=H+'px'; svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  svg.innerHTML='';
+  const ns='http://www.w3.org/2000/svg';
+  const LCX=W*0.25, RCX=W*0.75, CY=H/2-8, R=68;
+  const mkP=(cx,cy)=>Array.from({length:RED_VN},(_,i)=>{
+    const a=(2*Math.PI*i/RED_VN)-Math.PI/2;
+    return {x:cx+R*Math.cos(a),y:cy+R*Math.sin(a)};
+  });
+  const pL=mkP(LCX,CY), pR=mkP(RCX,CY);
+  const E=(t,a)=>{const el=document.createElementNS(ns,t);for(const[k,v]of Object.entries(a))el.setAttribute(k,v);svg.appendChild(el);return el;};
+  const T=(x,y,txt,fill,sz=10,anc='middle')=>{const t=E('text',{x,y,'text-anchor':anc,'font-family':'Courier New,monospace','font-size':sz,fill});t.textContent=txt;return t;};
+
+  T(LCX,16,'G — source graph','#7a8599',11);
+  T(LCX,30,'IS = {0,1}  (no edge 0-1)','var(--accent)',9.5);
+  T(RCX,16,"G' — complement graph",'#7a8599',11);
+  T(RCX,30,"Clique = {0,1}  (edge 0-1 added)",'var(--accent)',9.5);
+
+  // arrow
+  E('line',{x1:W/2-26,y1:CY,x2:W/2+26,y2:CY,stroke:'#2a3548','stroke-width':2});
+  E('polygon',{points:`${W/2+26},${CY} ${W/2+19},${CY-4} ${W/2+19},${CY+4}`,fill:'#2a3548'});
+  T(W/2,CY-10,'IS ≤ₚ Clique','#6b8cff',13);
+  T(W/2,CY+18,'complement','#3d5070',9);
+
+  // G edges
+  G_EDGES.forEach(([a,b])=>{
+    E('line',{x1:pL[a].x,y1:pL[a].y,x2:pL[b].x,y2:pL[b].y,stroke:'#2a3548','stroke-width':1.5,opacity:0.55});
+  });
+  // G verts
+  for(let i=0;i<RED_VN;i++){
+    const hl=IS_VERTS.includes(i);
+    E('circle',{cx:pL[i].x,cy:pL[i].y,r:15,fill:hl?'rgba(0,212,170,0.2)':'rgba(61,80,112,0.22)',stroke:hl?'var(--accent)':'#3d5070','stroke-width':hl?2.5:1.5});
+    T(pL[i].x,pL[i].y+1,''+i,hl?'var(--accent)':'#7a8599',11);
+  }
+
+  // G' edges (animate progressively)
+  GP_EDGES.forEach(([a,b],idx)=>{
+    const revealed = highlightGpEdges.length===0 || idx < highlightGpEdges;
+    const isKey = a===0&&b===1;
+    if (!revealed) return;
+    E('line',{x1:pR[a].x,y1:pR[a].y,x2:pR[b].x,y2:pR[b].y,
+      stroke:isKey?'var(--accent)':'#2a3548','stroke-width':isKey?2.5:1.5,opacity:isKey?0.9:0.5});
+  });
+  // G' verts
+  for(let i=0;i<RED_VN;i++){
+    const hl=CLIQUE_VERTS.includes(i)&&(highlightGpEdges===0||highlightGpEdges>=1);
+    E('circle',{cx:pR[i].x,cy:pR[i].y,r:15,fill:hl?'rgba(0,212,170,0.2)':'rgba(61,80,112,0.22)',stroke:hl?'var(--accent)':'#3d5070','stroke-width':hl?2.5:1.5});
+    T(pR[i].x,pR[i].y+1,''+i,hl?'var(--accent)':'#7a8599',11);
+  }
+
+  T(LCX,H-10,'No edge (0,1) in G → independent set','#4d5f7a',8.5);
+  T(RCX,H-10,"Edge (0,1) added in G' → clique",'#4d5f7a',8.5);
+}
+
+function animateReduction() {
+  clearTimeout(redTimer); redStep=0; redRunning=true;
+  function step() {
+    if (!redRunning) return;
+    renderReductionDiagram(redStep);
+    if (redStep<=GP_EDGES.length) { redStep++; redTimer=setTimeout(step,700); }
+    else redRunning=false;
+  }
+  step();
+}
+
+function resetReductionDiagram() {
+  clearTimeout(redTimer); redRunning=false; redStep=0;
+  renderReductionDiagram([]);
+}
+
+// ═══════════════════════════════════════════════════════════
+// GROWTH CHART — realistic operation counts
+// ═══════════════════════════════════════════════════════════
+function renderGrowthChart() {
+  const svg = document.getElementById('growth-chart');
+  if (!svg) return;
+  const W = (svg.parentElement.clientWidth||500)-28, H=185;
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  svg.innerHTML='';
+  const ns='http://www.w3.org/2000/svg';
+  const KF=3;
+  const ns2=[4,5,6,7,8,9,10,11,12,14];
+
+  function comb(n,r){if(r>n)return 0;if(r===0)return 1;let x=1;for(let i=0;i<r;i++)x=x*(n-i)/(i+1);return Math.round(x);}
+
+  // Brute force: C(n,k) * k*(k-1)/2 edge checks (worst case all subsets pass)
+  const bfV = ns2.map(nv=>comb(nv,KF)*(KF*(KF-1)/2));
+  // Backtracking realistic: average pruning removes ~60-70% of nodes
+  // Approximated by n! / (k! * (n-k)!) * 0.3 * k (heuristic from empirical data)
+  const btV = ns2.map(nv=>Math.max(1, Math.round(comb(nv,KF)*0.28*(KF+1))));
+
+  const maxV = Math.max(...bfV);
+  const PAD={l:54,r:18,t:20,b:30};
+  const cW=W-PAD.l-PAD.r, cH=H-PAD.t-PAD.b;
+  const xs=i=>PAD.l+(i/(ns2.length-1))*cW;
+  const ys=v=>PAD.t+cH-(Math.log1p(v)/Math.log1p(maxV))*cH;
+  const E=(t,a)=>{const el=document.createElementNS(ns,t);for(const[k,v]of Object.entries(a))el.setAttribute(k,v);svg.appendChild(el);return el;};
+  const T=(x,y,txt,fill,sz=9,anc='middle')=>{const t=E('text',{x,y,'text-anchor':anc,'font-family':'Courier New,monospace','font-size':sz,fill});t.textContent=txt;return t;};
+
+  // Grid lines
+  [0,.25,.5,.75,1].forEach(f=>{
+    const y=PAD.t+f*cH;
+    E('line',{x1:PAD.l,y1:y,x2:W-PAD.r,y2:y,stroke:'#1c2640','stroke-width':1});
+    const val=Math.round(Math.expm1(f*Math.log1p(maxV)));
+    T(PAD.l-3,y+3,(val>999?Math.round(val/1000)+'k':val)+'','#2a3548',7,'end');
+  });
+  E('line',{x1:PAD.l,y1:PAD.t,x2:PAD.l,y2:PAD.t+cH,stroke:'#1c2640','stroke-width':1});
+
+  const plotLine=(vals,color,dashed=false)=>{
+    const pts=vals.map((v,i)=>`${xs(i)},${ys(v)}`).join(' ');
+    const poly=E('polyline',{points:pts,fill:'none',stroke:color,'stroke-width':2.5});
+    if(dashed) poly.setAttribute('stroke-dasharray','6,3');
+    vals.forEach((v,i)=>E('circle',{cx:xs(i),cy:ys(v),r:3.5,fill:color}));
+  };
+
+  plotLine(bfV,'var(--accent2)');
+  plotLine(btV,'var(--accent)');
+
+  ns2.forEach((nv,i)=>T(xs(i),H-8,''+nv,'#3d5070',8));
+  T(W/2,H-1,'n (vertices, k=3 fixed)','#2a3548',8);
+  T(PAD.l+6,PAD.t+8,'■ Brute Force','var(--accent2)',9,'start');
+  T(PAD.l+100,PAD.t+8,'■ Backtracking (est.)','var(--accent)',9,'start');
+  T(8,PAD.t+cH/2,'ops (log scale)','#2a3548',8,'middle');
+}
+
+// ═══════════════════════════════════════════════════════════
+// COLLAPSIBLES
+// ═══════════════════════════════════════════════════════════
+function toggleCollapse(name) {
+  const body=document.getElementById('body-'+name);
+  const arr=document.getElementById('arr-'+name);
+  if (!body) return;
+  body.classList.toggle('open');
+  if(arr) arr.textContent=body.classList.contains('open')?'▾':'▸';
+}
+
+// ═══════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════
+window.addEventListener('load', ()=>{
+  loadPreset(0);
+  renderPseudocode(-1);
+});
+
+window.addEventListener('resize', ()=>{
+  if (!n) return;
+  placeVertices('graph-canvas');
+  if (steps.length&&stepIdx>=0) applyStep(steps[stepIdx]);
+  else renderGraph('graph-canvas',graph,vertexPos,n,[],[],[],[]);
+});
+</script>
+</body>
+</html>
